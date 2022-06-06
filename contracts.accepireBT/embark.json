@@ -1,0 +1,28 @@
+{
+  "contracts": [
+    "contracts/**"
+  ],
+  "app": {},
+  "buildDir": "build/",
+  "config": {
+    "contracts": "config/contracts.js",
+    "blockchain": "config/blockchain.js",
+    "storage": false,
+    "communication": false, 
+    "webserver": false
+  },
+  "versions": {
+    "solc": "0.8.0"
+  },
+  "plugins": {
+    "embark-geth": {},
+    "embark-solium": {},
+    "embark-fortune": {}
+  },
+  "options": {
+    "solc": {
+      "optimize": true,
+      "optimize-runs": 200
+    }
+  }
+}

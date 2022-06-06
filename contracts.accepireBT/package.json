@@ -1,0 +1,22 @@
+{
+  "name": "contracts.accepireBT",
+  "version": "0.0.1",
+  "description": "",
+  "scripts": {
+    "test": "embark test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "embark": "^6.0.0",
+    "embark-geth": "^6.0.0",
+    "embarkjs": "^6.0.0",
+    "embarkjs-ens": "^6.0.0",
+    "embarkjs-web3": "^6.0.0"
+  },
+  "dependencies": {
+    "embark-fortune": "^1.0.0",
+    "embark-solium": "^0.1.0"
+  }
+}
