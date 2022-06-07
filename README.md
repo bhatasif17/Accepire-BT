@@ -1,1 +1,3 @@
-# accepire-bt
+# Accepire-BT
+
+## Blockchain Based Trade Financing Application
