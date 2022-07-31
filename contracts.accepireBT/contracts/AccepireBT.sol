@@ -4,6 +4,10 @@ import {SafeMath} from "./SafeMath.sol";
 
 contract AccepireBT {
     uint256 nonce;
+    
+     /**
+     * Enumeration for the Order Status
+     */
     enum OrderState {
         Negotiation,
         Created,
@@ -14,6 +18,9 @@ contract AccepireBT {
     }
     enum PaymentState {NA, Initiated, Received, Cancelled, Processed}
 
+    /**
+     * Order Struct
+     */
     struct Order {
         bytes32 orderID;
         address seller;
@@ -31,6 +38,9 @@ contract AccepireBT {
 
     mapping(bytes32 => Order) public orders;
 
+    /**
+     * Dealer (Importer and Exporter) Struct
+     */
     struct dealer {
         address seller;
         address buyer;
@@ -38,7 +48,10 @@ contract AccepireBT {
         bool isDeal;
     }
     mapping(bytes32 => dealer) public dealers;
-
+    
+    /**
+     * Invoice Struct
+     */
     struct Invoice {
         uint256 unitPrice;
         uint256 totalCost;
@@ -47,7 +60,10 @@ contract AccepireBT {
         bool isConfirmedByBuyer;
     }
     mapping(bytes32 => Invoice) public invoices;
-
+    
+    /**
+     * Events
+     */
     event OrderCancelled(string description);
     event OrderConfirmed(string description);
     event OrderDoesntExist(string description);
@@ -59,6 +75,9 @@ contract AccepireBT {
     //buyer = msg.sender;
     //}
 
+    /**
+     * Restrictions/Constraints for the parties. 
+     */
     modifier onlySeller(bytes32 _orderID) {
         require(
             msg.sender == dealers[_orderID].seller,
@@ -80,9 +99,14 @@ contract AccepireBT {
         );
         _;
     }
-
-    //CONRACT 1 SALES CONTRACT BETWEEEN APPLICANT AND BENEFICIARY
-    //buyer accesses the contract to start a deal with Seller
+    
+                                        /**
+                                         * SALES CONTRACT BETWEEEN APPLICANT (Importer/Buyer) AND BENEFICIARY (Exporter/Seller)
+                                         */
+    
+    /**
+     * Buyer accesses the contract to start a deal with Seller
+     */
     function setSalesContract(address _seller)
         public
         returns (
@@ -116,7 +140,9 @@ contract AccepireBT {
         return (_orderID, dealers[_orderID].buyer, dealers[_orderID].seller);
     }
 
-    //buyer creates an order
+    /**
+     * Buyer creates an order
+     */
     function addOrder(
         bytes32 _orderID,
         bytes8 _quantity,
@@ -140,8 +166,10 @@ contract AccepireBT {
         orders[_orderID].paymentState = PaymentState.NA;
         return true;
     }
-
-    //seller sends an invoice to buyer
+    
+     /**
+     * seller sends an invoice to buyer
+     */
     function createInvoice(
         bytes32 _orderID,
         uint256 _unitPrice,
@@ -172,7 +200,9 @@ contract AccepireBT {
         invoices[_orderID].isConfirmedByBuyer = true;
     }
 
-    //seller confirms the order
+     /**
+     * Seller confirms the order
+     */
     function confirmOrder(bytes32 _orderID)
         public
         inOrderState(OrderState.Negotiation, _orderID)
@@ -187,10 +217,16 @@ contract AccepireBT {
         orders[_orderID].orderState = OrderState.Created;
     }
 
+    /**
+     * Check if the order exists
+     */
     function orderExists(bytes32 _orderID) internal view returns (bool) {
         return orders[_orderID].isOrder;
     }
 
+    /**
+     * Cancel Order if the order id in Negotiation State
+     */
     function cancelOrder(bytes32 _orderID)
         public
         inOrderState(OrderState.Negotiation, _orderID)
@@ -205,7 +241,10 @@ contract AccepireBT {
     // function receiveOrder(bytes32 _orderID) public onlyBuyer(_orderID) {
     //     orders[_orderID].orderState = OrderState.Received;
     // }
-
+    
+    /**
+     * View Invoices
+     */
     function viewInvoices(bytes32 _orderID)
         public
         view
@@ -213,21 +252,37 @@ contract AccepireBT {
     {
         return (invoices[_orderID]);
     }
-
+    
+    /**
+     * View Seller and Buyer based on OrderId
+     */
     function viewDealers(bytes32 _orderID) public view returns (dealer memory) {
         return (dealers[_orderID]);
     }
 
+    /**
+     * View Order
+     */
     function viewOrders(bytes32 _orderID) public view returns (Order memory) {
         return (orders[_orderID]);
     }
 
+    /**
+     * View Order information
+     */
     function checkOrder(bytes32 _orderID) public view returns (bool) {
         return orders[_orderID].isOrder;
     }
 
-    //CONTRACT 2 FINANCIAL CONTRACT BETWEEN APPLICANT AND ISSUING BANK
+                                                /**
+                                                 * FINANCIAL CONTRACT BETWEEN APPLICANT AND ISSUING BANK
+                                                 */
+     
     address issuingBank;
+    
+    /**
+     * Financial Party Struct
+     */
     struct fParty {
         address buyer;
         address issuingBank;
@@ -236,7 +291,10 @@ contract AccepireBT {
         bool isConfirmedByIssuingBank;
     }
     mapping(bytes32 => fParty) public financialAgreementParties;
-
+    
+    /**
+     * Consraint
+     */
     modifier onlyIssuingBank() {
         require(
             msg.sender == issuingBank,
@@ -245,8 +303,9 @@ contract AccepireBT {
         _;
     }
 
-    //Set the agreement
-    //By Applicant
+    /**
+     * Set the Financial Agreement - By Applicant
+     */
     function setFinancialAgreementParties(
         bytes32 _orderID,
         address _issuingBank
@@ -283,8 +342,9 @@ contract AccepireBT {
         );
     }
 
-    //Sign the agreement
-    //BY issuing bank
+     /**
+     * Confirm the Financial Agreement - BY IssuingBbank
+     */
     function confirmFinancialAgreement(bytes32 _orderID) public view onlyIssuingBank {
         require(
             financialAgreementParties[_orderID].exists == true,
@@ -292,9 +352,14 @@ contract AccepireBT {
         );
         financialAgreementParties[_orderID].isConfirmedByIssuingBank == true;
     }
+   
+                                           /**
+                                             * LETTER OF CREDIT BETWEEN ISSUING BANK AND BENEFICIARY VIA CORRESPONDING BANK
+                                             */
 
-    //CONTRACT 3 BETWEEN ISSUING BANK AND BENEFICIARY VIA CORRESPONDING BANK
-
+    /**
+     * Letter of Credit Struct
+     */
     struct lcparty {
         address seller;
         address issuingBank;
@@ -304,14 +369,17 @@ contract AccepireBT {
         bool exists;
     }
     mapping(bytes32 => lcparty) public lcParties;
-
+    
     struct document {
         bytes32[] documentID;
     }
     //bytes32[] document;
     mapping(bytes32 => document) documents; //orderID => array of documents
     mapping(bytes32 => bool) documentValidity; //documentID => validity
-
+    
+    /**
+     * Constarints
+     */
     modifier onlyIssuingBankByOrderID(bytes32 _orderID) {
         require(
             msg.sender == lcParties[_orderID].issuingBank,
@@ -328,8 +396,10 @@ contract AccepireBT {
         _;
     }
 
-    //By issuing bank
-
+    
+    /**
+     * Set Letter of Credit Agreement 
+     */
     function setLCAgreement(
         address _seller,
         address _correspondingBank,
@@ -355,10 +425,12 @@ contract AccepireBT {
 
         return true;
     }
-
-    //assume that we have uploaded LC to IPFS and we have an ID of that document
-    //save ipfs id of the document
-    //_documentID is the ID from IPFS
+    
+    /**
+     * Assume that we have uploaded LC to IPFS and we have an ID of that document
+     * Save ipfs id of the document
+     * _documentID is the ID from IPFS
+     */
     function addDocument(bytes32 _orderID, bytes32 _documentID)
         public
         onlyIssuingBankByOrderID(_orderID)
@@ -371,7 +443,9 @@ contract AccepireBT {
         documentValidity[_documentID] = false;
     }
 
-    //get number of documents uploaded to ipfs for this order
+    /**
+     * Get number of documents uploaded to ipfs for this order
+     */
     function getNumberOfDocuments(bytes32 _orderID)
         public
         view
@@ -380,7 +454,9 @@ contract AccepireBT {
         return documents[_orderID].documentID.length;
     }
 
-    //get the ipfs id of the document
+    /**
+     * Get the ipfs id of the document
+     */
     function getDocumentID(bytes32 _orderID)
         public
         view
@@ -390,11 +466,16 @@ contract AccepireBT {
         return documents[_orderID].documentID;
     }
 
-    //check if the document is valid
+    /**
+     * Check if the document is valid
+     */
     function IsDocumentValid(bytes32 _documentID) public view returns (bool) {
         return documentValidity[_documentID];
     }
-
+    
+    /**
+     * Validate the Document
+     */
     function validateDocument(bytes32 _orderID, bytes32 _documentID)
         public
         onlyCorrespondingBank(_orderID)
@@ -412,8 +493,12 @@ contract AccepireBT {
         return (_orderID, _documentID, documentValidity[_documentID]);
     }
 
-    //SHIPPING AGREEMENT
-
+                                                        /**
+                                                         * SHIPPING PHASE
+                                                         */
+    /**
+     * Set who is involved in the shipping process
+     */
     struct shipmentParty {
         bytes32 orderId;
         address buyer;
@@ -431,7 +516,9 @@ contract AccepireBT {
         _;
     }
 
-    //By beneficiary
+    /**
+     * Set the shipping agreement
+     */
     function setShippingAgreement(
         bytes32 _orderId,
         address _buyer,
@@ -455,7 +542,9 @@ contract AccepireBT {
         orders[_orderId].orderState = OrderState.Processed;
     }
 
-    //Inspection Company and Customs (both cuntries) will verify the goods
+    /**
+     * Inspection Company and Customs (both cuntries) will verify the goods
+     */
     function verifyGoods(bytes32 _orderId) public {
         if (shipmentParties[_orderId].inspectionCompany == msg.sender)
             orders[_orderId].isVerifiedByInspectionCompany = true;
@@ -469,7 +558,9 @@ contract AccepireBT {
             orders[_orderId].isVerifiedBySellerCountryCustoms = true;
     }
 
-    //Shipping Company loads the goods
+    /**
+     * Shipping Company loads the goods
+     */
     function initiateShipment(bytes32 _orderId)
         public
         onlyShippingCompany(_orderId)
@@ -489,7 +580,9 @@ contract AccepireBT {
         orders[_orderId].orderState = OrderState.Transit;
     }
 
-    //Accessed by buyer
+    /**
+     * Buyer confirms the shipment
+     */
     function confirmShipment(bytes32 _orderId) public onlyBuyer(_orderId) {
         require(
             orders[_orderId].orderState == OrderState.Transit,
@@ -498,8 +591,12 @@ contract AccepireBT {
         orders[_orderId].orderState = OrderState.Received;
     }
 
-    //PAYMENT Agreement to initiate the payment to seller
-
+                                                                /**
+                                                                 * PAYMENT PHASE
+                                                                 */
+    /**
+     * Payment parties involved in the payment
+     */
     struct paymentParty {
         bytes32 orderId;
         address buyer;
@@ -509,7 +606,9 @@ contract AccepireBT {
     }
     mapping(bytes32 => paymentParty) public paymentParties;
 
-    //set Agreement parties
+    /**
+     * set Payment Agreement
+     */
     function setPaymentAgreement(
         bytes32 _orderId,
         address _correspondingBank,
@@ -523,7 +622,9 @@ contract AccepireBT {
         paymentParties[_orderId].exists = true;
     }
 
-    //For issuing Bank
+    /**
+     * Issuing Bank initiates the payment
+     */
     function initiatePayment(bytes32 _orderId) public onlyIssuingBank {
         require(orders[_orderId].paymentState == PaymentState.NA);
         require(
@@ -533,7 +634,9 @@ contract AccepireBT {
         orders[_orderId].paymentState = PaymentState.Initiated;
     }
 
-    //for Corresponding Bank
+    /**
+     * Corresponding Bank processes the Payment
+     */
     function processpayment(bytes32 _orderId)
         public
         onlyCorrespondingBank(_orderId)
@@ -545,7 +648,11 @@ contract AccepireBT {
         orders[_orderId].paymentState = PaymentState.Processed;
     }
 
-    //for Seller/Beneficiary Bank
+    /**
+     * Seller receives and confirms the payment
+     * The order state changes to Received
+     * Payment state changes to Received
+     */
     function paymentReceived(bytes32 _orderId) public onlySeller(_orderId) {
         require(
             orders[_orderId].paymentState == PaymentState.Processed,
